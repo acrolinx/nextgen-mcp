@@ -1,0 +1,47 @@
+{
+  "name": "acrolinx-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Acrolinx NextGen API text analysis and improvement",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "acrolinx-mcp": "./dist/index.js",
+    "nextgen-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "acrolinx",
+    "api",
+    "text-analysis",
+    "writing-assistant",
+    "style-guide"
+  ],
+  "author": "Acrolinx",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/acrolinx/nextgen-mcp"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.13.0",
+    "@types/node-fetch": "^2.6.12",
+    "dotenv": "^17.2.0",
+    "form-data": "^4.0.3",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

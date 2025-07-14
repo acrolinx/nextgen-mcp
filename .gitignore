@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output
+# Note: dist/ is committed for npx usage
+build/
+*.js
+*.js.map
+*.d.ts
+!dist/**/*.js
+!dist/**/*.d.ts
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Keep TypeScript source files
+!src/**/*.ts
