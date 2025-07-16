@@ -214,8 +214,7 @@ const TOOLS: Tool[] = [
         },
         style_guide: {
           type: 'string',
-          description: 'Style guide to follow',
-          enum: ['ap', 'chicago', 'microsoft', 'proofpoint'],
+          description: 'Style guide to follow (predefined: ap, chicago, microsoft, proofpoint) or custom UUID',
           default: 'microsoft'
         }
       },
@@ -247,8 +246,7 @@ const TOOLS: Tool[] = [
         },
         style_guide: {
           type: 'string',
-          description: 'Style guide to check against',
-          enum: ['ap', 'chicago', 'microsoft'],
+          description: 'Style guide to check against (predefined: ap, chicago, microsoft) or custom UUID',
           default: 'microsoft'
         }
       },
@@ -280,8 +278,7 @@ const TOOLS: Tool[] = [
         },
         style_guide: {
           type: 'string',
-          description: 'Style guide for suggestions',
-          enum: ['ap', 'chicago', 'microsoft'],
+          description: 'Style guide for suggestions (predefined: ap, chicago, microsoft) or custom UUID',
           default: 'microsoft'
         }
       },
