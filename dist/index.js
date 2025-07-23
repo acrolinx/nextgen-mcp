@@ -118,7 +118,7 @@ const TOOLS = [
                 dialect: {
                     type: 'string',
                     description: 'Language dialect',
-                    enum: ['american_english', 'british_english', 'australian_english', 'canadian_english'],
+                    enum: ['american_english', 'british_oxford', 'canadian_english'],
                     default: 'american_english'
                 },
                 tone: {
@@ -150,7 +150,7 @@ const TOOLS = [
                 dialect: {
                     type: 'string',
                     description: 'Language dialect',
-                    enum: ['american_english', 'british_english', 'australian_english', 'canadian_english'],
+                    enum: ['american_english', 'british_oxford', 'canadian_english'],
                     default: 'american_english'
                 },
                 tone: {
@@ -182,7 +182,7 @@ const TOOLS = [
                 dialect: {
                     type: 'string',
                     description: 'Language dialect',
-                    enum: ['american_english', 'british_english', 'australian_english', 'canadian_english'],
+                    enum: ['american_english', 'british_oxford', 'canadian_english'],
                     default: 'american_english'
                 },
                 tone: {
