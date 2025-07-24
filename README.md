@@ -1,6 +1,6 @@
 # Acrolinx MCP Server
 
-A Model Context Protocol (MCP) server that integrates with the Acrolinx NextGen API to provide advanced text analysis and improvement capabilities to AI assistants like Claude.
+A Model Context Protocol (MCP) server that integrates with the Acrolinx NextGen API to provide advanced text analysis and improvement capabilities to AI assistants like Claude and Cursor.
 
 ## Features
 
@@ -58,14 +58,24 @@ npm run build
 | `POLL_INTERVAL` | No | Status check interval (ms) | `2000` |
 | `MAX_RETRIES` | No | API retry attempts | `3` |
 
-## Usage with Claude Desktop
+## Usage with AI IDEs
 
-Add the server to your Claude Desktop configuration:
+This MCP server is compatible with any IDE that supports the Model Context Protocol, including Claude Desktop and Cursor.
 
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+### Configuration
+
+The configuration is identical for all MCP-compatible IDEs. Only the **configuration file location** differs:
+
+| IDE | Configuration File Location |
+|-----|----------------------------|
+| **Claude Desktop** (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| **Claude Desktop** (Windows) | `%APPDATA%\Claude\claude_desktop_config.json` |
+| **Cursor** (macOS/Linux) | `~/.cursor/mcp.json` |
+| **Cursor** (Windows) | `%USERPROFILE%\.cursor\mcp.json` |
 
 ### Option 1: Run directly from GitHub (recommended)
+
+Add this configuration to your IDE's MCP configuration file:
 
 ```json
 {
@@ -86,6 +96,8 @@ Add the server to your Claude Desktop configuration:
 
 ### Option 2: Run from local installation
 
+For local development or if you prefer to run from a local installation:
+
 ```json
 {
   "mcpServers": {
@@ -99,6 +111,12 @@ Add the server to your Claude Desktop configuration:
   }
 }
 ```
+
+**Note**: After updating the configuration, restart your IDE for the changes to take effect.
+
+### Using with Cursor
+
+When using this MCP server with Cursor, you'll see a "Calling undefined" message with a "Run tool" button when the AI wants to use Acrolinx tools. This is **normal behavior** - simply click "Run tool" to approve the analysis. This manual approval is Cursor's security feature for MCP tool execution.
 
 ## Available Tools
 
@@ -168,21 +186,36 @@ node test-suggestions-complete.js
 npm run build
 ```
 
-## Architecture
+## Troubleshooting
 
-The server implements the Model Context Protocol using stdio transport and provides four main tools that interact with the Acrolinx NextGen API. Key features include:
+### Common Issues
 
-- **Retry Logic**: Exponential backoff for improved reliability
-- **Timeout Handling**: Configurable timeouts for long-running operations
-- **Comprehensive Logging**: Debug mode for troubleshooting
-- **Type Safety**: Full TypeScript implementation with proper type guards
-- **Graceful Shutdown**: Proper cleanup on termination
+1. **"Calling undefined" message in Cursor**: This is normal Cursor behavior, not an error. When you see this message with a "Run tool" button, click the button to execute the Acrolinx analysis. This is Cursor's security feature requiring manual approval for MCP tool execution.
+
+2. **"Client closed" error in Cursor**: Try clearing the npx cache: `npx clear-npx-cache` and restart Cursor
+
+3. **API key issues**: Verify your `ACROLINX_API_KEY` is correctly set in the environment variables
+
+4. **Permission errors**: On Unix systems, ensure the compiled JavaScript file is executable (`chmod +x dist/index.js`)
+
+### Debug Mode
 
 Enable debug logging by setting `DEBUG=true` in your environment:
 
 ```bash
 DEBUG=true npm run start
 ```
+
+## Architecture
+
+The server implements the Model Context Protocol using stdio transport and provides four main tools that interact with the Acrolinx NextGen API. Key features include:
+
+- **Cross-IDE Compatibility**: Works with Claude Desktop, Cursor, and any MCP-compatible IDE
+- **Retry Logic**: Exponential backoff for improved reliability
+- **Timeout Handling**: Configurable timeouts for long-running operations
+- **Comprehensive Logging**: Debug mode for troubleshooting
+- **Type Safety**: Full TypeScript implementation with proper type guards
+- **Graceful Shutdown**: Proper cleanup on termination
 
 ## License
 
