@@ -109,7 +109,7 @@ interface Issue {
 }
 
 interface WorkflowResponse {
-  workflow_id: string;
+  workflow_id?: string;
   status: 'running' | 'completed' | 'failed';
   scores?: Scores;
   rewrite_scores?: Scores;
@@ -469,12 +469,20 @@ async function pollWorkflowCompletion(
     totalTime: Date.now() - startTime
   });
 
+  // Ensure the final result includes the workflow_id from the original submission
+  if (!result.workflow_id) {
+    result.workflow_id = workflow_id;
+  }
+
   return result;
 }
 
 // Format response with highlighted scores
 function formatResponse(result: WorkflowResponse): string {
-  let formatted = `Status: ${result.status}\nWorkflow ID: ${result.workflow_id}\n`;
+  let formatted = `Status: ${result.status}\n`;
+  if (result.workflow_id) {
+    formatted += `Workflow ID: ${result.workflow_id}\n`;
+  }
 
   if (result.scores) {
     formatted += '\n=== SCORES ===\n';
@@ -586,8 +594,10 @@ async function main() {
           // Submit rewrite request
           const submitResult = await submitWorkflow('rewrites', text, dialect, tone, style_guide);
 
-          // Poll for completion
-          const result = await pollWorkflowCompletion(submitResult.workflow_id, 'rewrites', submitResult);
+          // Poll for completion if workflow is running, otherwise use the immediate result
+          const result = submitResult.status === 'running' && submitResult.workflow_id
+            ? await pollWorkflowCompletion(submitResult.workflow_id, 'rewrites', submitResult)
+            : submitResult;
 
           return {
             content: [
@@ -616,8 +626,10 @@ async function main() {
           // Submit check request
           const submitResult = await submitWorkflow('checks', text, dialect, tone, style_guide);
 
-          // Poll for completion
-          const result = await pollWorkflowCompletion(submitResult.workflow_id, 'checks', submitResult);
+          // Poll for completion if workflow is running, otherwise use the immediate result
+          const result = submitResult.status === 'running' && submitResult.workflow_id
+            ? await pollWorkflowCompletion(submitResult.workflow_id, 'checks', submitResult)
+            : submitResult;
 
           return {
             content: [
@@ -646,8 +658,10 @@ async function main() {
           // Submit suggestions request
           const submitResult = await submitWorkflow('suggestions', text, dialect, tone, style_guide);
 
-          // Poll for completion
-          const result = await pollWorkflowCompletion(submitResult.workflow_id, 'suggestions', submitResult);
+          // Poll for completion if workflow is running, otherwise use the immediate result
+          const result = submitResult.status === 'running' && submitResult.workflow_id
+            ? await pollWorkflowCompletion(submitResult.workflow_id, 'suggestions', submitResult)
+            : submitResult;
 
           return {
             content: [
