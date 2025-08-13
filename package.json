@@ -37,7 +37,7 @@
     "@modelcontextprotocol/sdk": "^1.13.0",
     "@types/node-fetch": "^2.6.12",
     "dotenv": "^17.2.0",
-    "form-data": "^4.0.3",
+    "form-data": "^4.0.4",
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
