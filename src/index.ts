@@ -77,46 +77,76 @@ interface WorkflowStatusArgs {
   workflow_type: 'rewrites' | 'checks' | 'suggestions';
 }
 
-interface ScoreDetails {
-  score: number;
-  issues?: number;
-  word_count?: number;
-  sentence_count?: number;
-  average_sentence_length?: number;
-  flesch_reading_ease?: number;
-  flesch_kincaid_grade?: number;
-  informality?: number;
-  target_informality?: number;
-  liveliness?: number;
-  target_liveliness?: number;
+// Score structures based on OpenAPI spec
+interface QualityScore {
+  score?: number | null;
+  grammar?: GrammarScore;
+  style_guide?: StyleGuideScore;
+  terminology?: TerminologyScore;
 }
 
-interface Scores {
-  quality: ScoreDetails;
-  clarity: ScoreDetails;
-  grammar: ScoreDetails;
-  style_guide: ScoreDetails;
-  tone: ScoreDetails;
-  terminology: ScoreDetails;
+interface GrammarScore {
+  score?: number | null;
+  issues?: number | null;
+}
+
+interface StyleGuideScore {
+  score?: number | null;
+  issues?: number | null;
+}
+
+interface TerminologyScore {
+  score?: number | null;
+  issues?: number | null;
+}
+
+interface ClarityScore {
+  score?: number | null;
+  flesch_reading_ease?: number | null;
+  sentence_complexity?: number | null;
+  vocabulary_complexity?: number | null;
+  sentence_count?: number | null;
+  word_count?: number | null;
+  average_sentence_length?: number | null;
+}
+
+interface ToneScore {
+  score?: number | null;
+  informality?: number | null;
+  liveliness?: number | null;
+  informality_alignment?: number | null;
+  liveliness_alignment?: number | null;
+}
+
+interface AnalysisScore {
+  clarity?: ClarityScore;
+  tone?: ToneScore;
+}
+
+interface ScoreOutput {
+  quality?: QualityScore;
+  analysis?: AnalysisScore;
 }
 
 interface Issue {
-  category?: string;
+  category?: string | null;
   subcategory?: string;
   original: string;
+  char_index?: number;
   suggestion?: string;
   modified?: string;
 }
 
 interface WorkflowResponse {
   workflow_id?: string;
-  status: 'running' | 'completed' | 'failed';
-  scores?: Scores;
-  rewrite_scores?: Scores;
+  status: 'running' | 'completed' | 'failed' | 'not_found';
+  scores?: ScoreOutput | null;
+  rewrite_scores?: ScoreOutput | null;
   issues?: Issue[];
-  rewrite?: string;
+  rewrite?: string | null;
   check_options?: any;
   error?: string;
+  webhook_response?: any;
 }
 
 // Type guards
@@ -486,29 +516,122 @@ function formatResponse(result: WorkflowResponse): string {
 
   if (result.scores) {
     formatted += '\n=== SCORES ===\n';
-    formatted += `Quality Score: ${result.scores.quality.score}\n`;
-    formatted += `Clarity Score: ${result.scores.clarity.score}\n`;
-    formatted += `  - Word Count: ${result.scores.clarity.word_count}\n`;
-    formatted += `  - Sentence Count: ${result.scores.clarity.sentence_count}\n`;
-    formatted += `  - Avg Sentence Length: ${result.scores.clarity.average_sentence_length}\n`;
-    formatted += `  - Flesch Reading Ease: ${result.scores.clarity.flesch_reading_ease}\n`;
-    formatted += `  - Flesch-Kincaid Grade: ${result.scores.clarity.flesch_kincaid_grade}\n`;
-    formatted += `Grammar Score: ${result.scores.grammar.score} (${result.scores.grammar.issues} issues)\n`;
-    formatted += `Style Guide Score: ${result.scores.style_guide.score} (${result.scores.style_guide.issues} issues)\n`;
-    formatted += `Tone Score: ${result.scores.tone.score}\n`;
-    formatted += `  - Informality: ${result.scores.tone.informality} (target: ${result.scores.tone.target_informality})\n`;
-    formatted += `  - Liveliness: ${result.scores.tone.liveliness} (target: ${result.scores.tone.target_liveliness})\n`;
-    formatted += `Terminology Score: ${result.scores.terminology.score} (${result.scores.terminology.issues} issues)\n`;
+    
+    // Quality scores (includes grammar, style guide, terminology)
+    if (result.scores.quality) {
+      formatted += `Quality Score: ${result.scores.quality.score ?? 'N/A'}\n`;
+      
+      if (result.scores.quality.grammar) {
+        formatted += `  Grammar: ${result.scores.quality.grammar.score ?? 'N/A'}`;
+        if (result.scores.quality.grammar.issues !== null && result.scores.quality.grammar.issues !== undefined) {
+          formatted += ` (${result.scores.quality.grammar.issues} issues)`;
+        }
+        formatted += '\n';
+      }
+      
+      if (result.scores.quality.style_guide) {
+        formatted += `  Style Guide: ${result.scores.quality.style_guide.score ?? 'N/A'}`;
+        if (result.scores.quality.style_guide.issues !== null && result.scores.quality.style_guide.issues !== undefined) {
+          formatted += ` (${result.scores.quality.style_guide.issues} issues)`;
+        }
+        formatted += '\n';
+      }
+      
+      if (result.scores.quality.terminology) {
+        formatted += `  Terminology: ${result.scores.quality.terminology.score ?? 'N/A'}`;
+        if (result.scores.quality.terminology.issues !== null && result.scores.quality.terminology.issues !== undefined) {
+          formatted += ` (${result.scores.quality.terminology.issues} issues)`;
+        }
+        formatted += '\n';
+      }
+    }
+    
+    // Analysis scores (clarity and tone)
+    if (result.scores.analysis) {
+      if (result.scores.analysis.clarity) {
+        formatted += `Clarity Score: ${result.scores.analysis.clarity.score ?? 'N/A'}\n`;
+        if (result.scores.analysis.clarity.word_count !== null && result.scores.analysis.clarity.word_count !== undefined) {
+          formatted += `  - Word Count: ${result.scores.analysis.clarity.word_count}\n`;
+        }
+        if (result.scores.analysis.clarity.sentence_count !== null && result.scores.analysis.clarity.sentence_count !== undefined) {
+          formatted += `  - Sentence Count: ${result.scores.analysis.clarity.sentence_count}\n`;
+        }
+        if (result.scores.analysis.clarity.average_sentence_length !== null && result.scores.analysis.clarity.average_sentence_length !== undefined) {
+          formatted += `  - Avg Sentence Length: ${result.scores.analysis.clarity.average_sentence_length.toFixed(1)}\n`;
+        }
+        if (result.scores.analysis.clarity.flesch_reading_ease !== null && result.scores.analysis.clarity.flesch_reading_ease !== undefined) {
+          formatted += `  - Flesch Reading Ease: ${result.scores.analysis.clarity.flesch_reading_ease.toFixed(1)}\n`;
+        }
+        if (result.scores.analysis.clarity.sentence_complexity !== null && result.scores.analysis.clarity.sentence_complexity !== undefined) {
+          formatted += `  - Sentence Complexity: ${result.scores.analysis.clarity.sentence_complexity.toFixed(1)}\n`;
+        }
+        if (result.scores.analysis.clarity.vocabulary_complexity !== null && result.scores.analysis.clarity.vocabulary_complexity !== undefined) {
+          formatted += `  - Vocabulary Complexity: ${result.scores.analysis.clarity.vocabulary_complexity.toFixed(1)}\n`;
+        }
+      }
+      
+      if (result.scores.analysis.tone) {
+        formatted += `Tone Score: ${result.scores.analysis.tone.score ?? 'N/A'}\n`;
+        if (result.scores.analysis.tone.informality !== null && result.scores.analysis.tone.informality !== undefined) {
+          formatted += `  - Informality: ${result.scores.analysis.tone.informality.toFixed(1)}`;
+          if (result.scores.analysis.tone.informality_alignment !== null && result.scores.analysis.tone.informality_alignment !== undefined) {
+            formatted += ` (alignment: ${result.scores.analysis.tone.informality_alignment.toFixed(1)})`;
+          }
+          formatted += '\n';
+        }
+        if (result.scores.analysis.tone.liveliness !== null && result.scores.analysis.tone.liveliness !== undefined) {
+          formatted += `  - Liveliness: ${result.scores.analysis.tone.liveliness.toFixed(1)}`;
+          if (result.scores.analysis.tone.liveliness_alignment !== null && result.scores.analysis.tone.liveliness_alignment !== undefined) {
+            formatted += ` (alignment: ${result.scores.analysis.tone.liveliness_alignment.toFixed(1)})`;
+          }
+          formatted += '\n';
+        }
+      }
+    }
   }
 
   if (result.rewrite_scores) {
     formatted += '\n=== REWRITE SCORES ===\n';
-    formatted += `Quality Score: ${result.rewrite_scores.quality.score}\n`;
-    formatted += `Clarity Score: ${result.rewrite_scores.clarity.score}\n`;
-    formatted += `Grammar Score: ${result.rewrite_scores.grammar.score} (${result.rewrite_scores.grammar.issues} issues)\n`;
-    formatted += `Style Guide Score: ${result.rewrite_scores.style_guide.score} (${result.rewrite_scores.style_guide.issues} issues)\n`;
-    formatted += `Tone Score: ${result.rewrite_scores.tone.score}\n`;
-    formatted += `Terminology Score: ${result.rewrite_scores.terminology.score} (${result.rewrite_scores.terminology.issues} issues)\n`;
+    
+    // Quality scores for rewrite
+    if (result.rewrite_scores.quality) {
+      formatted += `Quality Score: ${result.rewrite_scores.quality.score ?? 'N/A'}\n`;
+      
+      if (result.rewrite_scores.quality.grammar) {
+        formatted += `  Grammar: ${result.rewrite_scores.quality.grammar.score ?? 'N/A'}`;
+        if (result.rewrite_scores.quality.grammar.issues !== null && result.rewrite_scores.quality.grammar.issues !== undefined) {
+          formatted += ` (${result.rewrite_scores.quality.grammar.issues} issues)`;
+        }
+        formatted += '\n';
+      }
+      
+      if (result.rewrite_scores.quality.style_guide) {
+        formatted += `  Style Guide: ${result.rewrite_scores.quality.style_guide.score ?? 'N/A'}`;
+        if (result.rewrite_scores.quality.style_guide.issues !== null && result.rewrite_scores.quality.style_guide.issues !== undefined) {
+          formatted += ` (${result.rewrite_scores.quality.style_guide.issues} issues)`;
+        }
+        formatted += '\n';
+      }
+      
+      if (result.rewrite_scores.quality.terminology) {
+        formatted += `  Terminology: ${result.rewrite_scores.quality.terminology.score ?? 'N/A'}`;
+        if (result.rewrite_scores.quality.terminology.issues !== null && result.rewrite_scores.quality.terminology.issues !== undefined) {
+          formatted += ` (${result.rewrite_scores.quality.terminology.issues} issues)`;
+        }
+        formatted += '\n';
+      }
+    }
+    
+    // Analysis scores for rewrite
+    if (result.rewrite_scores.analysis) {
+      if (result.rewrite_scores.analysis.clarity) {
+        formatted += `Clarity Score: ${result.rewrite_scores.analysis.clarity.score ?? 'N/A'}\n`;
+      }
+      
+      if (result.rewrite_scores.analysis.tone) {
+        formatted += `Tone Score: ${result.rewrite_scores.analysis.tone.score ?? 'N/A'}\n`;
+      }
+    }
   }
 
   if (result.rewrite) {
@@ -519,7 +642,8 @@ function formatResponse(result: WorkflowResponse): string {
   if (result.issues && result.issues.length > 0) {
     formatted += `\n=== ISSUES (${result.issues.length} total) ===\n`;
     result.issues.forEach((issue, idx) => {
-      formatted += `${idx + 1}. [${issue.category || issue.subcategory}] ${issue.original} → ${issue.suggestion || issue.modified || 'N/A'}\n`;
+      const position = issue.char_index !== undefined ? ` [pos: ${issue.char_index}]` : '';
+      formatted += `${idx + 1}. [${issue.category || issue.subcategory || 'N/A'}]${position} "${issue.original}" → "${issue.suggestion || issue.modified || 'N/A'}"\n`;
     });
   }
 
