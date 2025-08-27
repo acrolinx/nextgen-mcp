@@ -16,7 +16,7 @@ A Model Context Protocol (MCP) server that integrates with the Markup.ai API to 
 ### Prerequisites
 
 - Node.js 18.0.0 or higher
-- An Markup.ai API key
+- A Markup AI API key
 
 ### Setup
 
