@@ -1,6 +1,6 @@
-# Acrolinx MCP Server
+# Markup.ai MCP Server
 
-A Model Context Protocol (MCP) server that integrates with the Acrolinx NextGen API to provide advanced text analysis and improvement capabilities to AI assistants like Claude and Cursor.
+A Model Context Protocol (MCP) server that integrates with the Markup.ai API to provide advanced text analysis and improvement capabilities to AI assistants like Claude and Cursor.
 
 ## Features
 
@@ -16,15 +16,15 @@ A Model Context Protocol (MCP) server that integrates with the Acrolinx NextGen 
 ### Prerequisites
 
 - Node.js 18.0.0 or higher
-- An Acrolinx API key
+- A Markup AI API key
 
 ### Setup
 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/acrolinx/nextgen-mcp.git
-cd nextgen-mcp
+git clone https://github.com/markupai/mcp.git
+cd mcp
 ```
 
 2. Install dependencies:
@@ -37,7 +37,7 @@ npm install
 
 ```bash
 cp .env.example .env
-# Edit .env and add your ACROLINX_API_KEY
+# Edit .env and add your MARKUPAI_API_KEY
 ```
 
 4. Build the project:
@@ -50,8 +50,8 @@ npm run build
 
 | Variable | Required | Description | Default |
 |----------|----------|-------------|---------|
-| `ACROLINX_API_KEY` | Yes | Your Acrolinx API key | - |
-| `ACROLINX_BASE_URL` | No | API base URL | `https://app.acrolinx.cloud` |
+| `MARKUPAI_API_KEY` | Yes | Your Markup.ai API key | - |
+| `MARKUPAI_BASE_URL` | No | API base URL | `https://api.markup.ai` |
 | `DEBUG` | No | Enable debug logging | `false` |
 | `MAX_TEXT_LENGTH` | No | Maximum text length (chars) | `100000` |
 | `WORKFLOW_TIMEOUT` | No | Workflow timeout (ms) | `60000` |
@@ -80,14 +80,14 @@ Add this configuration to your IDE's MCP configuration file:
 ```json
 {
   "mcpServers": {
-    "acrolinx": {
+    "markupai": {
       "command": "npx",
       "args": [
         "-y",
-        "github:acrolinx/nextgen-mcp"
+        "github:markupai/mcp"
       ],
       "env": {
-        "ACROLINX_API_KEY": "your_api_key_here"
+        "MARKUPAI_API_KEY": "your_api_key_here"
       }
     }
   }
@@ -101,11 +101,11 @@ For local development or if you prefer to run from a local installation:
 ```json
 {
   "mcpServers": {
-    "acrolinx": {
+    "markupai": {
       "command": "node",
-      "args": ["/path/to/nextgen-mcp/dist/index.js"],
+      "args": ["/path/to/mcp/dist/index.js"],
       "env": {
-        "ACROLINX_API_KEY": "your_api_key_here"
+        "MARKUPAI_API_KEY": "your_api_key_here"
       }
     }
   }
@@ -116,11 +116,11 @@ For local development or if you prefer to run from a local installation:
 
 ### Using with Cursor
 
-When using this MCP server with Cursor, you'll see a "Calling undefined" message with a "Run tool" button when the AI wants to use Acrolinx tools. This is **normal behavior** - simply click "Run tool" to approve the analysis. This manual approval is Cursor's security feature for MCP tool execution.
+When using this MCP server with Cursor, you'll see a "Calling undefined" message with a "Run tool" button when the AI wants to use Markup.ai tools. This is **normal behavior** - simply click "Run tool" to approve the analysis. This manual approval is Cursor's security feature for MCP tool execution.
 
 ## Available Tools
 
-### `acrolinx_rewrite`
+### `markupai_rewrite`
 
 Automatically rewrite and improve text content.
 
@@ -131,7 +131,7 @@ Automatically rewrite and improve text content.
 - `tone`: Desired tone (default: "formal")
 - `style_guide`: Style guide to follow (default: "microsoft")
 
-### `acrolinx_check`
+### `markupai_check`
 
 Analyze text for quality issues without making changes.
 
@@ -142,7 +142,7 @@ Analyze text for quality issues without making changes.
 - `tone`: Target tone to check against (default: "formal")
 - `style_guide`: Style guide to check against (default: "microsoft")
 
-### `acrolinx_suggestions`
+### `markupai_suggestions`
 
 Get detailed editing suggestions for improving text.
 
@@ -153,7 +153,7 @@ Get detailed editing suggestions for improving text.
 - `tone`: Target tone for suggestions (default: "formal")
 - `style_guide`: Style guide for suggestions (default: "microsoft")
 
-### `acrolinx_workflow_status`
+### `markupai_workflow_status`
 
 Check the status of an asynchronous workflow.
 
@@ -190,11 +190,11 @@ npm run build
 
 ### Common Issues
 
-1. **"Calling undefined" message in Cursor**: This is normal Cursor behavior, not an error. When you see this message with a "Run tool" button, click the button to execute the Acrolinx analysis. This is Cursor's security feature requiring manual approval for MCP tool execution.
+1. **"Calling undefined" message in Cursor**: This is normal Cursor behavior, not an error. When you see this message with a "Run tool" button, click the button to execute the Markup.ai analysis. This is Cursor's security feature requiring manual approval for MCP tool execution.
 
 2. **"Client closed" error in Cursor**: Try clearing the npx cache: `npx clear-npx-cache` and restart Cursor
 
-3. **API key issues**: Verify your `ACROLINX_API_KEY` is correctly set in the environment variables
+3. **API key issues**: Verify your `MARKUPAI_API_KEY` is correctly set in the environment variables
 
 4. **Permission errors**: On Unix systems, ensure the compiled JavaScript file is executable (`chmod +x dist/index.js`)
 
@@ -208,7 +208,7 @@ DEBUG=true npm run start
 
 ## Architecture
 
-The server implements the Model Context Protocol using stdio transport and provides four main tools that interact with the Acrolinx NextGen API. Key features include:
+The server implements the Model Context Protocol using stdio transport and provides four main tools that interact with the Markup.ai API. Key features include:
 
 - **Cross-IDE Compatibility**: Works with Claude Desktop, Cursor, and any MCP-compatible IDE
 - **Retry Logic**: Exponential backoff for improved reliability
@@ -234,6 +234,5 @@ MIT
 For issues and questions:
 
 - Create an issue on GitHub
-- Check the [Acrolinx documentation](https://docs.acrolinx.com)
-- Contact Acrolinx support
-
+- Check the [Markup AI documentation](https://docs.markupai.com)
+- Contact Markup.ai support

@@ -32,7 +32,7 @@ function log(level: LogLevel, message: string, data?: any) {
 }
 
 // Validate required environment variables
-const REQUIRED_ENV_VARS = ['ACROLINX_API_KEY'];
+const REQUIRED_ENV_VARS = ['MARKUPAI_API_KEY'];
 const missingVars = REQUIRED_ENV_VARS.filter(varName => !process.env[varName]);
 if (missingVars.length > 0) {
   log('error', 'Missing required environment variables', missingVars);
@@ -43,14 +43,14 @@ if (missingVars.length > 0) {
 }
 
 // Configuration
-const ACROLINX_BASE_URL = process.env.ACROLINX_BASE_URL || 'https://app.acrolinx.cloud';
-const ACROLINX_API_KEY = process.env.ACROLINX_API_KEY!;
+const MARKUPAI_BASE_URL = process.env.MARKUPAI_BASE_URL || 'https://api.markup.ai';
+const MARKUPAI_API_KEY = process.env.MARKUPAI_API_KEY!;
 const WORKFLOW_TIMEOUT = parseInt(process.env.WORKFLOW_TIMEOUT || '60000', 10);
 const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL || '2000', 10);
 const MAX_RETRIES = parseInt(process.env.MAX_RETRIES || '3', 10);
 
 log('info', 'Configuration loaded', {
-  baseUrl: ACROLINX_BASE_URL,
+  baseUrl: MARKUPAI_BASE_URL,
   workflowTimeout: WORKFLOW_TIMEOUT,
   pollInterval: POLL_INTERVAL,
   maxRetries: MAX_RETRIES
@@ -77,45 +77,45 @@ interface WorkflowStatusArgs {
   workflow_type: 'rewrites' | 'checks' | 'suggestions';
 }
 
-// Score structures based on OpenAPI spec
-interface QualityScore {
-  score?: number | null;
-  grammar?: GrammarScore;
-  style_guide?: StyleGuideScore;
-  terminology?: TerminologyScore;
-}
-
+// Score component interfaces
 interface GrammarScore {
-  score?: number | null;
-  issues?: number | null;
+  score: number | null;
+  issues?: number;
 }
 
 interface StyleGuideScore {
-  score?: number | null;
-  issues?: number | null;
+  score: number | null;
+  issues?: number;
 }
 
 interface TerminologyScore {
-  score?: number | null;
-  issues?: number | null;
+  score: number | null;
+  issues?: number;
 }
 
 interface ClarityScore {
-  score?: number | null;
-  flesch_reading_ease?: number | null;
-  sentence_complexity?: number | null;
-  vocabulary_complexity?: number | null;
-  sentence_count?: number | null;
-  word_count?: number | null;
-  average_sentence_length?: number | null;
+  score: number | null;
+  word_count?: number;
+  sentence_count?: number;
+  average_sentence_length?: number;
+  flesch_reading_ease?: number;
+  flesch_kincaid_grade?: number;
 }
 
 interface ToneScore {
-  score?: number | null;
-  informality?: number | null;
-  liveliness?: number | null;
-  informality_alignment?: number | null;
-  liveliness_alignment?: number | null;
+  score: number | null;
+  informality?: number;
+  target_informality?: number;
+  liveliness?: number;
+  target_liveliness?: number;
+}
+
+// Main score structure
+interface QualityScore {
+  score: number | null;
+  grammar?: GrammarScore;
+  style_guide?: StyleGuideScore;
+  terminology?: TerminologyScore;
 }
 
 interface AnalysisScore {
@@ -128,26 +128,57 @@ interface ScoreOutput {
   analysis?: AnalysisScore;
 }
 
+// Issue/Suggestion interfaces
 interface Issue {
-  category?: string | null;
-  subcategory?: string;
   original: string;
   char_index?: number;
-  suggestion?: string;
-  modified?: string;
+  category?: string;
+  subcategory?: string;
 }
 
-interface WorkflowResponse {
+interface Suggestion {
+  original: string;
+  suggestion?: string;
+  modified?: string;
+  char_index?: number;
+  category?: string;
+  subcategory?: string;
+}
+
+// Response interfaces
+interface StyleCheckResponse {
   workflow_id?: string;
-  status: 'running' | 'completed' | 'failed' | 'not_found';
+  status: 'running' | 'completed' | 'failed';
+  scores?: ScoreOutput | null;
+  issues?: Issue[];
+  check_options?: any;
+  webhook_response?: any;
+  error?: string;
+}
+
+interface RewriteResponse {
+  workflow_id?: string;
+  status: 'running' | 'completed' | 'failed';
   scores?: ScoreOutput | null;
   rewrite_scores?: ScoreOutput | null;
-  issues?: Issue[];
+  issues?: Suggestion[];
   rewrite?: string | null;
   check_options?: any;
-  error?: string;
   webhook_response?: any;
+  error?: string;
 }
+
+interface SuggestionResponse {
+  workflow_id?: string;
+  status: 'running' | 'completed' | 'failed';
+  scores?: ScoreOutput | null;
+  issues?: Suggestion[];
+  check_options?: any;
+  webhook_response?: any;
+  error?: string;
+}
+
+type WorkflowResponse = StyleCheckResponse | RewriteResponse | SuggestionResponse;
 
 // Type guards
 function isBaseToolArgs(args: unknown): args is BaseToolArgs {
@@ -220,7 +251,7 @@ async function retryWithBackoff<T>(
 // Define available tools
 const TOOLS: Tool[] = [
   {
-    name: 'acrolinx_rewrite',
+    name: 'markupai_rewrite',
     description: 'Automatically rewrite and improve text content using AI-powered style guides. This tool analyzes your text for grammar, clarity, tone, and style guide compliance, then provides a completely rewritten version. Use this when you need to transform rough drafts into polished content, ensure consistency with brand voice, or adapt content for different audiences. Returns both before/after scores and the rewritten text.',
     inputSchema: {
       type: 'object',
@@ -252,7 +283,7 @@ const TOOLS: Tool[] = [
     }
   },
   {
-    name: 'acrolinx_check',
+    name: 'markupai_check',
     description: 'Analyze text for quality issues without making changes. This tool provides detailed scores for grammar, clarity, tone, style guide compliance, and terminology. Use this for content audits, quality assessments, or when you want to understand specific issues before editing. Returns comprehensive readability metrics and issue counts by category.',
     inputSchema: {
       type: 'object',
@@ -284,7 +315,7 @@ const TOOLS: Tool[] = [
     }
   },
   {
-    name: 'acrolinx_suggestions',
+    name: 'markupai_suggestions',
     description: 'Get detailed editing suggestions for improving text. This tool identifies specific issues and provides targeted recommendations for each problem found. Use this when you want to maintain editorial control while getting guidance on improvements. Returns a categorized list of issues with specific suggestions for each.',
     inputSchema: {
       type: 'object',
@@ -316,8 +347,8 @@ const TOOLS: Tool[] = [
     }
   },
   {
-    name: 'acrolinx_workflow_status',
-    description: 'Check the status of an asynchronous Acrolinx workflow. Use this to poll for results when other operations return a running status. Workflows typically complete within 5-30 seconds depending on text length and complexity.',
+    name: 'markupai_workflow_status',
+    description: 'Check the status of an asynchronous Markup.ai workflow. Use this to poll for results when other operations return a running status. Workflows typically complete within 5-30 seconds depending on text length and complexity.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -341,14 +372,14 @@ function createTextBuffer(text: string): Buffer {
   return Buffer.from(text, 'utf-8');
 }
 
-// Submit a workflow to Acrolinx
+// Submit a workflow to Markup.ai
 async function submitWorkflow(
   endpoint: 'rewrites' | 'checks' | 'suggestions',
   text: string,
   dialect: string,
   tone: string,
   style_guide: string
-): Promise<WorkflowResponse> {
+): Promise<StyleCheckResponse | RewriteResponse | SuggestionResponse> {
   validateTextInput(text);
 
   return retryWithBackoff(async () => {
@@ -372,10 +403,10 @@ async function submitWorkflow(
       textLength: text.length
     });
 
-    const response = await fetch(`${ACROLINX_BASE_URL}/v1/style/${endpoint}`, {
+    const response = await fetch(`${MARKUPAI_BASE_URL}/v1/style/${endpoint}`, {
       method: 'POST',
       headers: {
-        'Authorization': ACROLINX_API_KEY,
+        'Authorization': `Bearer ${MARKUPAI_API_KEY}`,
         ...formData.getHeaders()
       },
       body: formData,
@@ -388,10 +419,10 @@ async function submitWorkflow(
         statusText: response.statusText,
         error: errorText
       });
-      throw new Error(`Acrolinx API error: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(`Markup.ai API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
-    const result = await response.json() as WorkflowResponse;
+    const result = await response.json() as StyleCheckResponse | RewriteResponse | SuggestionResponse;
     log('info', `Workflow submitted successfully`, {
       workflow_id: result.workflow_id,
       status: result.status
@@ -405,15 +436,15 @@ async function submitWorkflow(
 async function getWorkflowStatus(
   workflow_id: string,
   workflow_type: 'rewrites' | 'checks' | 'suggestions'
-): Promise<WorkflowResponse> {
+): Promise<StyleCheckResponse | RewriteResponse | SuggestionResponse> {
   return retryWithBackoff(async () => {
     log('debug', `Checking workflow status`, { workflow_id, workflow_type });
 
     const response = await fetch(
-      `${ACROLINX_BASE_URL}/v1/style/${workflow_type}/${workflow_id}`,
+      `${MARKUPAI_BASE_URL}/v1/style/${workflow_type}/${workflow_id}`,
       {
         headers: {
-          'Authorization': ACROLINX_API_KEY,
+          'Authorization': `Bearer ${MARKUPAI_API_KEY}`,
         },
       }
     );
@@ -425,10 +456,10 @@ async function getWorkflowStatus(
         statusText: response.statusText,
         error: errorText
       });
-      throw new Error(`Acrolinx API error: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(`Markup.ai API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
-    const result = await response.json() as WorkflowResponse;
+    const result = await response.json() as StyleCheckResponse | RewriteResponse | SuggestionResponse;
     log('debug', `Workflow status retrieved`, {
       workflow_id,
       status: result.status
@@ -442,8 +473,8 @@ async function getWorkflowStatus(
 async function pollWorkflowCompletion(
   workflow_id: string,
   workflow_type: 'rewrites' | 'checks' | 'suggestions',
-  initialResult: WorkflowResponse
-): Promise<WorkflowResponse> {
+  initialResult: StyleCheckResponse | RewriteResponse | SuggestionResponse
+): Promise<StyleCheckResponse | RewriteResponse | SuggestionResponse> {
   const startTime = Date.now();
   let result = initialResult;
   let status = result.status;
@@ -508,22 +539,23 @@ async function pollWorkflowCompletion(
 }
 
 // Format response with highlighted scores
-function formatResponse(result: WorkflowResponse): string {
+function formatResponse(result: StyleCheckResponse | RewriteResponse | SuggestionResponse): string {
   let formatted = `Status: ${result.status}\n`;
   if (result.workflow_id) {
     formatted += `Workflow ID: ${result.workflow_id}\n`;
   }
 
+  // Format original scores
   if (result.scores) {
     formatted += '\n=== SCORES ===\n';
     
-    // Quality scores (includes grammar, style guide, terminology)
+    // Quality scores
     if (result.scores.quality) {
       formatted += `Quality Score: ${result.scores.quality.score ?? 'N/A'}\n`;
       
       if (result.scores.quality.grammar) {
         formatted += `  Grammar: ${result.scores.quality.grammar.score ?? 'N/A'}`;
-        if (result.scores.quality.grammar.issues !== null && result.scores.quality.grammar.issues !== undefined) {
+        if (result.scores.quality.grammar.issues !== undefined) {
           formatted += ` (${result.scores.quality.grammar.issues} issues)`;
         }
         formatted += '\n';
@@ -531,7 +563,7 @@ function formatResponse(result: WorkflowResponse): string {
       
       if (result.scores.quality.style_guide) {
         formatted += `  Style Guide: ${result.scores.quality.style_guide.score ?? 'N/A'}`;
-        if (result.scores.quality.style_guide.issues !== null && result.scores.quality.style_guide.issues !== undefined) {
+        if (result.scores.quality.style_guide.issues !== undefined) {
           formatted += ` (${result.scores.quality.style_guide.issues} issues)`;
         }
         formatted += '\n';
@@ -539,67 +571,59 @@ function formatResponse(result: WorkflowResponse): string {
       
       if (result.scores.quality.terminology) {
         formatted += `  Terminology: ${result.scores.quality.terminology.score ?? 'N/A'}`;
-        if (result.scores.quality.terminology.issues !== null && result.scores.quality.terminology.issues !== undefined) {
+        if (result.scores.quality.terminology.issues !== undefined) {
           formatted += ` (${result.scores.quality.terminology.issues} issues)`;
         }
         formatted += '\n';
       }
     }
     
-    // Analysis scores (clarity and tone)
+    // Analysis scores
     if (result.scores.analysis) {
       if (result.scores.analysis.clarity) {
-        formatted += `Clarity Score: ${result.scores.analysis.clarity.score ?? 'N/A'}\n`;
-        if (result.scores.analysis.clarity.word_count !== null && result.scores.analysis.clarity.word_count !== undefined) {
-          formatted += `  - Word Count: ${result.scores.analysis.clarity.word_count}\n`;
+        const clarity = result.scores.analysis.clarity;
+        formatted += `Clarity Score: ${clarity.score ?? 'N/A'}\n`;
+        if (clarity.word_count !== undefined) {
+          formatted += `  - Word Count: ${clarity.word_count}\n`;
         }
-        if (result.scores.analysis.clarity.sentence_count !== null && result.scores.analysis.clarity.sentence_count !== undefined) {
-          formatted += `  - Sentence Count: ${result.scores.analysis.clarity.sentence_count}\n`;
+        if (clarity.sentence_count !== undefined) {
+          formatted += `  - Sentence Count: ${clarity.sentence_count}\n`;
         }
-        if (result.scores.analysis.clarity.average_sentence_length !== null && result.scores.analysis.clarity.average_sentence_length !== undefined) {
-          formatted += `  - Avg Sentence Length: ${result.scores.analysis.clarity.average_sentence_length.toFixed(1)}\n`;
+        if (clarity.average_sentence_length !== undefined) {
+          formatted += `  - Avg Sentence Length: ${clarity.average_sentence_length}\n`;
         }
-        if (result.scores.analysis.clarity.flesch_reading_ease !== null && result.scores.analysis.clarity.flesch_reading_ease !== undefined) {
-          formatted += `  - Flesch Reading Ease: ${result.scores.analysis.clarity.flesch_reading_ease.toFixed(1)}\n`;
+        if (clarity.flesch_reading_ease !== undefined) {
+          formatted += `  - Flesch Reading Ease: ${clarity.flesch_reading_ease}\n`;
         }
-        if (result.scores.analysis.clarity.sentence_complexity !== null && result.scores.analysis.clarity.sentence_complexity !== undefined) {
-          formatted += `  - Sentence Complexity: ${result.scores.analysis.clarity.sentence_complexity.toFixed(1)}\n`;
-        }
-        if (result.scores.analysis.clarity.vocabulary_complexity !== null && result.scores.analysis.clarity.vocabulary_complexity !== undefined) {
-          formatted += `  - Vocabulary Complexity: ${result.scores.analysis.clarity.vocabulary_complexity.toFixed(1)}\n`;
+        if (clarity.flesch_kincaid_grade !== undefined) {
+          formatted += `  - Flesch-Kincaid Grade: ${clarity.flesch_kincaid_grade}\n`;
         }
       }
       
       if (result.scores.analysis.tone) {
-        formatted += `Tone Score: ${result.scores.analysis.tone.score ?? 'N/A'}\n`;
-        if (result.scores.analysis.tone.informality !== null && result.scores.analysis.tone.informality !== undefined) {
-          formatted += `  - Informality: ${result.scores.analysis.tone.informality.toFixed(1)}`;
-          if (result.scores.analysis.tone.informality_alignment !== null && result.scores.analysis.tone.informality_alignment !== undefined) {
-            formatted += ` (alignment: ${result.scores.analysis.tone.informality_alignment.toFixed(1)})`;
-          }
-          formatted += '\n';
+        const tone = result.scores.analysis.tone;
+        formatted += `Tone Score: ${tone.score ?? 'N/A'}\n`;
+        if (tone.informality !== undefined && tone.target_informality !== undefined) {
+          formatted += `  - Informality: ${tone.informality} (target: ${tone.target_informality})\n`;
         }
-        if (result.scores.analysis.tone.liveliness !== null && result.scores.analysis.tone.liveliness !== undefined) {
-          formatted += `  - Liveliness: ${result.scores.analysis.tone.liveliness.toFixed(1)}`;
-          if (result.scores.analysis.tone.liveliness_alignment !== null && result.scores.analysis.tone.liveliness_alignment !== undefined) {
-            formatted += ` (alignment: ${result.scores.analysis.tone.liveliness_alignment.toFixed(1)})`;
-          }
-          formatted += '\n';
+        if (tone.liveliness !== undefined && tone.target_liveliness !== undefined) {
+          formatted += `  - Liveliness: ${tone.liveliness} (target: ${tone.target_liveliness})\n`;
         }
       }
     }
   }
 
-  if (result.rewrite_scores) {
+  // Format rewrite scores (for RewriteResponse)
+  if ('rewrite_scores' in result && result.rewrite_scores) {
     formatted += '\n=== REWRITE SCORES ===\n';
     
-    // Quality scores for rewrite
+    // Quality scores
     if (result.rewrite_scores.quality) {
       formatted += `Quality Score: ${result.rewrite_scores.quality.score ?? 'N/A'}\n`;
       
       if (result.rewrite_scores.quality.grammar) {
         formatted += `  Grammar: ${result.rewrite_scores.quality.grammar.score ?? 'N/A'}`;
-        if (result.rewrite_scores.quality.grammar.issues !== null && result.rewrite_scores.quality.grammar.issues !== undefined) {
+        if (result.rewrite_scores.quality.grammar.issues !== undefined) {
           formatted += ` (${result.rewrite_scores.quality.grammar.issues} issues)`;
         }
         formatted += '\n';
@@ -607,7 +631,7 @@ function formatResponse(result: WorkflowResponse): string {
       
       if (result.rewrite_scores.quality.style_guide) {
         formatted += `  Style Guide: ${result.rewrite_scores.quality.style_guide.score ?? 'N/A'}`;
-        if (result.rewrite_scores.quality.style_guide.issues !== null && result.rewrite_scores.quality.style_guide.issues !== undefined) {
+        if (result.rewrite_scores.quality.style_guide.issues !== undefined) {
           formatted += ` (${result.rewrite_scores.quality.style_guide.issues} issues)`;
         }
         formatted += '\n';
@@ -615,35 +639,37 @@ function formatResponse(result: WorkflowResponse): string {
       
       if (result.rewrite_scores.quality.terminology) {
         formatted += `  Terminology: ${result.rewrite_scores.quality.terminology.score ?? 'N/A'}`;
-        if (result.rewrite_scores.quality.terminology.issues !== null && result.rewrite_scores.quality.terminology.issues !== undefined) {
+        if (result.rewrite_scores.quality.terminology.issues !== undefined) {
           formatted += ` (${result.rewrite_scores.quality.terminology.issues} issues)`;
         }
         formatted += '\n';
       }
     }
     
-    // Analysis scores for rewrite
+    // Analysis scores
     if (result.rewrite_scores.analysis) {
       if (result.rewrite_scores.analysis.clarity) {
         formatted += `Clarity Score: ${result.rewrite_scores.analysis.clarity.score ?? 'N/A'}\n`;
       }
-      
       if (result.rewrite_scores.analysis.tone) {
         formatted += `Tone Score: ${result.rewrite_scores.analysis.tone.score ?? 'N/A'}\n`;
       }
     }
   }
 
-  if (result.rewrite) {
+  // Format rewritten text (for RewriteResponse)
+  if ('rewrite' in result && result.rewrite) {
     formatted += '\n=== REWRITTEN TEXT ===\n';
     formatted += result.rewrite + '\n';
   }
 
+  // Format issues/suggestions
   if (result.issues && result.issues.length > 0) {
     formatted += `\n=== ISSUES (${result.issues.length} total) ===\n`;
     result.issues.forEach((issue, idx) => {
-      const position = issue.char_index !== undefined ? ` [pos: ${issue.char_index}]` : '';
-      formatted += `${idx + 1}. [${issue.category || issue.subcategory || 'N/A'}]${position} "${issue.original}" → "${issue.suggestion || issue.modified || 'N/A'}"\n`;
+      const suggestion = 'suggestion' in issue ? issue.suggestion : undefined;
+      const modified = 'modified' in issue ? issue.modified : undefined;
+      formatted += `${idx + 1}. [${issue.category || issue.subcategory || 'N/A'}] ${issue.original} → ${suggestion || modified || 'N/A'}\n`;
     });
   }
 
@@ -672,10 +698,10 @@ async function gracefulShutdown(server: Server) {
 async function main() {
   const server = new Server(
     {
-      name: 'acrolinx-mcp-server',
-      vendor: 'acrolinx',
+      name: 'markupai-mcp-server',
+      vendor: 'markupai',
       version: '1.0.0',
-      description: 'MCP server for Acrolinx NextGen API text analysis and improvement'
+      description: 'MCP server for Markup.ai API text analysis and improvement'
     },
     {
       capabilities: {
@@ -701,9 +727,9 @@ async function main() {
 
     try {
       switch (name) {
-        case 'acrolinx_rewrite': {
+        case 'markupai_rewrite': {
           if (!isBaseToolArgs(args)) {
-            throw new Error('Invalid arguments for acrolinx_rewrite');
+            throw new Error('Invalid arguments for markupai_rewrite');
           }
 
           const { text, dialect = 'american_english', tone = 'formal', style_guide = 'microsoft' } = args;
@@ -733,9 +759,9 @@ async function main() {
           };
         }
 
-        case 'acrolinx_check': {
+        case 'markupai_check': {
           if (!isBaseToolArgs(args)) {
-            throw new Error('Invalid arguments for acrolinx_check');
+            throw new Error('Invalid arguments for markupai_check');
           }
 
           const { text, dialect = 'american_english', tone = 'formal', style_guide = 'microsoft' } = args;
@@ -765,9 +791,9 @@ async function main() {
           };
         }
 
-        case 'acrolinx_suggestions': {
+        case 'markupai_suggestions': {
           if (!isBaseToolArgs(args)) {
-            throw new Error('Invalid arguments for acrolinx_suggestions');
+            throw new Error('Invalid arguments for markupai_suggestions');
           }
 
           const { text, dialect = 'american_english', tone = 'formal', style_guide = 'microsoft' } = args;
@@ -797,9 +823,9 @@ async function main() {
           };
         }
 
-        case 'acrolinx_workflow_status': {
+        case 'markupai_workflow_status': {
           if (!isWorkflowStatusArgs(args)) {
-            throw new Error('Invalid arguments for acrolinx_workflow_status');
+            throw new Error('Invalid arguments for markupai_workflow_status');
           }
 
           const { workflow_id, workflow_type } = args;
@@ -846,7 +872,7 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
-  log('info', 'Acrolinx MCP server running on stdio');
+  log('info', 'Markup.ai MCP server running on stdio');
 }
 
 main().catch((error) => {

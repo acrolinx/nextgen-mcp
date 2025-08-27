@@ -1,11 +1,11 @@
-# Contributing to Acrolinx MCP Server
+# Contributing to Markup.ai MCP Server
 
-We welcome contributions to the Acrolinx MCP Server! This document provides guidelines for contributing to the project.
+We welcome contributions to the Markup.ai MCP Server! This document provides guidelines for contributing to the project.
 
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/your-username/nextgen-mcp.git`
+2. Clone your fork: `git clone https://github.com/your-username/mcp.git`
 3. Create a new branch: `git checkout -b feature/your-feature-name`
 4. Make your changes
 5. Submit a pull request
@@ -13,7 +13,7 @@ We welcome contributions to the Acrolinx MCP Server! This document provides guid
 ## Development Setup
 
 1. Install dependencies: `npm install`
-2. Copy `.env.example` to `.env` and add your Acrolinx API key
+2. Copy `.env.example` to `.env` and add your Markup.ai API key
 3. Run in development mode: `npm run dev`
 4. Build the project: `npm run build`
 
