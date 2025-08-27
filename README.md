@@ -234,5 +234,5 @@ MIT
 For issues and questions:
 
 - Create an issue on GitHub
-- Check the [Markup.ai documentation](https://docs.markupai.com)
+- Check the [Markup AI documentation](https://docs.markupai.com)
 - Contact Markup.ai support
