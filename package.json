@@ -1,7 +1,7 @@
 {
   "name": "markupai-mcp-server",
   "version": "1.0.0",
-  "description": "MCP server for Markup.ai API text analysis and improvement",
+  "description": "MCP server for Markup AI API text analysis and improvement",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
@@ -23,7 +23,7 @@
     "writing-assistant",
     "style-guide"
   ],
-  "author": "Markup.ai",
+  "author": "Markup AI",
   "license": "MIT",
   "repository": {
     "type": "git",
