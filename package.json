@@ -1,12 +1,11 @@
 {
-  "name": "acrolinx-mcp-server",
+  "name": "markupai-mcp-server",
   "version": "1.0.0",
-  "description": "MCP server for Acrolinx NextGen API text analysis and improvement",
+  "description": "MCP server for Markup.ai API text analysis and improvement",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "acrolinx-mcp": "./dist/index.js",
-    "nextgen-mcp": "./dist/index.js"
+    "markupai-mcp": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -18,17 +17,17 @@
   "keywords": [
     "mcp",
     "modelcontextprotocol",
-    "acrolinx",
+    "markupai",
     "api",
     "text-analysis",
     "writing-assistant",
     "style-guide"
   ],
-  "author": "Acrolinx",
+  "author": "Markup.ai",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/acrolinx/nextgen-mcp"
+    "url": "https://github.com/markupai/mcp"
   },
   "engines": {
     "node": ">=18.0.0"
